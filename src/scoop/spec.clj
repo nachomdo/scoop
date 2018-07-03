@@ -18,6 +18,17 @@
                             ::s/invalid))
              #(gen/int)))
 
+(defn long? [x]
+  (try
+    (Long/parseLong (str x))
+    (catch Exception _
+      false)))
+
+(def int64 (s/with-gen (s/conformer #(if (and (long? %) (<= % Long/MAX_VALUE))
+                                       (long %)
+                                       ::s/invalid))
+             #(gen/large-integer)))
+
 
 (s/def ::request-type
   #{:produce :fetch :list-offsets :metadata
@@ -66,6 +77,53 @@
 
 ;; Same that v4. An additional field for offline_replicas has been added to the v5 metadata response
 (s/def ::metadata-request-v5 (s/merge ::metadata-request-v4))
+
+;; FetchRequest specs
+(s/def ::fetch-offset int64)
+(s/def ::max-bytes int32)
+(s/def ::min-bytes int32)
+(s/def ::max-wait-time int32)
+(s/def ::replica-id int32)
+(s/def ::isolation-level int8)
+
+(s/def :fetch-request-v0/partition (s/keys :req-un [::partition ::fetch-offset ::max-bytes]))
+(s/def :fetch-request-v0/partitions (s/coll-of :fetch-request-v0/partition))
+
+(s/def :fetch-request-v0/topic (s/keys :req-un [::topic :fetch-request-v0/partitions]))
+
+(s/def :fetch-request-v0/topics (s/coll-of :fetch-request-v0/topic))
+
+(s/def ::fetch-request-v0 (s/merge ::request (s/keys :req-un [::replica-id ::max-wait-time ::min-bytes :fetch-request-v0/topics])))
+(s/def ::fetch-request-v1 (s/merge ::fetch-request-v0))
+(s/def ::fetch-request-v2 (s/merge ::fetch-request-v1))
+(s/def ::fetch-request-v3 (s/merge ::request (s/keys :req-un [::replica-id ::max-wait-time ::min-bytes ::max-bytes :fetch-request-v0/topics])))
+(s/def ::fetch-request-v4 (s/merge ::request
+                                   (s/keys :req-un [::replica-id
+                                                    ::max-wait-time
+                                                    ::min-bytes
+                                                    ::max-bytes
+                                                    ::isolation-level
+                                                    :fetch-request-v0/topics])))
+
+(s/def ::log-start-offset int64)
+
+(s/def :fetch-request-v5/partition (s/keys :req-un [::partition ::fetch-offset ::max-bytes ::log-start-offset]))
+(s/def :fetch-request-v5/partitions (s/coll-of :fetch-request-v5/partition))
+
+(s/def :fetch-request-v5/topic (s/keys :req-un [::topic :fetch-request-v5/partitions]))
+(s/def :fetch-request-v5/topics (s/coll-of :fetch-request-v5/topic))
+
+
+(s/def ::fetch-request-v5(s/merge ::request
+                                   (s/keys :req-un [::replica-id
+                                                    ::max-wait-time
+                                                    ::min-bytes
+                                                    ::max-bytes
+                                                    ::isolation-level
+                                                    :fetch-request-v5/topics])))
+
+
+
 
 ;; ListGroupsRequest specs
 
@@ -176,3 +234,4 @@
   (keyword (format "scoop.spec/%s-request-v%d" (name request-type) version)))
 
 (s/def ::valid-request (s/multi-spec fetch-spec :valid-request))
+

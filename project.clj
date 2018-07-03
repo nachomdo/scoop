@@ -5,4 +5,4 @@
                  [org.clojure/spec.alpha "0.1.143"]
                  [org.clojure/test.check "0.9.0"]
                  [t6/from-scala "0.3.0"]
-                 [org.apache.kafka/kafka_2.11 "1.0.0"]])
+                 [org.apache.kafka/kafka_2.11 "1.1.0"]])
